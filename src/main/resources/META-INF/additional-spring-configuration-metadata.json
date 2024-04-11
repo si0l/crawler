@@ -1,0 +1,62 @@
+{"properties": [
+  {
+    "name": "url.base.makro",
+    "type": "java.lang.String",
+    "description": "A description for 'url.base.makro'"
+  },
+  {
+    "name": "url.base.checkers",
+    "type": "java.lang.String",
+    "description": "A description for 'url.base.checkers'"
+  },
+  {
+    "name": "pool.type",
+    "type": "java.lang.String",
+    "description": "A description for 'pool.type'"
+  },
+  {
+    "name": "pool.size",
+    "type": "java.lang.String",
+    "description": "A description for 'pool.size'"
+  },
+  {
+    "name": "search.timeout",
+    "type": "java.lang.String",
+    "description": "A description for 'search.timeout'"
+  },
+  {
+    "name": "search.retriesCount",
+    "type": "java.lang.Long",
+    "description": "A description for 'search.retriesCount'"
+  },
+  {
+    "name": "search.selector.makro",
+    "type": "java.lang.String",
+    "description": "A description for 'search.selector.makro'"
+  },
+  {
+    "name": "pool.threadsNumber",
+    "type": "java.lang.String",
+    "description": "A description for 'pool.threadsNumber'"
+  },
+  {
+    "name": "search.selector.checkers",
+    "type": "java.lang.String",
+    "description": "A description for 'search.selector.checkers'"
+  },
+  {
+    "name": "url.base.ngf",
+    "type": "java.lang.String",
+    "description": "A description for 'url.base.ngf'"
+  },
+  {
+    "name": "search.selector.ngf",
+    "type": "java.lang.String",
+    "description": "A description for 'search.selector.ngf'"
+  },
+  {
+    "name": "excel.pageName",
+    "type": "java.lang.String",
+    "description": "A description for 'excel.pageName'"
+  }
+]}
