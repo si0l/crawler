@@ -10,9 +10,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import dev.crawler.spirits.config.SimilarityProperties;
 import dev.crawler.spirits.dto.ItemDto;
 import dev.crawler.spirits.search.service.SearchService;
 import dev.crawler.spirits.service.ItemService;
+import dev.crawler.spirits.util.SimilarityAlgorithm;
 
 @RestController
 @RequestMapping("/api/search")
@@ -24,9 +26,18 @@ public class SearchController {
     @Autowired
     private ItemService itemService;
 
+    @Autowired
+    private SimilarityProperties similarityProperties;
+
     @PostMapping
-    public ResponseEntity<List<ItemDto>> searchProducts(@RequestParam String version) throws Exception {
-        List<ItemDto> found = searchService.search(version);
+    public ResponseEntity<List<ItemDto>> searchProducts(@RequestParam String version,
+            @RequestParam(required = false) SimilarityAlgorithm algorithm) throws Exception {
+
+        if (algorithm == null) {
+            algorithm = similarityProperties.getAlgorithm();
+        }
+
+        List<ItemDto> found = searchService.search(version, algorithm);
         List<ItemDto> result = itemService.createItems(found);
         return new ResponseEntity<>(result, HttpStatus.CREATED);
     }

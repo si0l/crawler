@@ -19,6 +19,7 @@ import dev.crawler.spirits.search.service.SearchProductService;
 import dev.crawler.spirits.search.service.SearchService;
 import dev.crawler.spirits.service.ProductService;
 import dev.crawler.spirits.util.ExecutorHelper;
+import dev.crawler.spirits.util.SimilarityAlgorithm;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -35,7 +36,9 @@ public class SearchServiceImpl implements SearchService {
     private SearchProductService searchProductService;
 
     @Override
-    public List<ItemDto> search(String version) throws Exception {
+    public List<ItemDto> search(String version, SimilarityAlgorithm algorithm) throws Exception {
+
+        log.info("Similarity algorithm applied: " + algorithm);
 
         List<ProductDto> products = productService.findByVersion(version);
         ThreadPoolTaskExecutor executor = ExecutorHelper.taskExecutor(poolProperties);
@@ -44,7 +47,8 @@ public class SearchServiceImpl implements SearchService {
         Instant dateStart = Instant.now();
         List<Future<List<ItemDto>>> futureResult = new ArrayList<>();
         for (ProductDto product : products) {
-            Callable<List<ItemDto>> callable = () -> searchProductService.search(product, dateStart.toEpochMilli());
+            Callable<List<ItemDto>> callable = () -> searchProductService.search(product, dateStart.toEpochMilli(),
+                    algorithm);
             Future<List<ItemDto>> future = executor.submit(callable);
             futureResult.add(future);
         }

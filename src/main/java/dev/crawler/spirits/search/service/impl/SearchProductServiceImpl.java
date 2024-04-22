@@ -1,6 +1,7 @@
 package dev.crawler.spirits.search.service.impl;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.openqa.selenium.By;
@@ -18,6 +19,8 @@ import dev.crawler.spirits.dto.ProductDto;
 import dev.crawler.spirits.search.service.Parse;
 import dev.crawler.spirits.search.service.SearchProductService;
 import dev.crawler.spirits.search.service.SearchUrl;
+import dev.crawler.spirits.similarity.service.SimilarityService;
+import dev.crawler.spirits.util.SimilarityAlgorithm;
 import dev.crawler.spirits.util.Source;
 import lombok.extern.slf4j.Slf4j;
 
@@ -27,6 +30,14 @@ public class SearchProductServiceImpl implements SearchProductService {
 
     @Autowired
     private SearchProperties searchProperties;
+
+    @Autowired
+    @Qualifier("jaroWinklerSimilarity")
+    private SimilarityService jaroWinklerSimilarity;
+
+    @Autowired
+    @Qualifier("levenshteinSimilarity")
+    private SimilarityService levenshteinSimilarity;
 
     @Autowired
     @Qualifier("parseMakro")
@@ -52,7 +63,7 @@ public class SearchProductServiceImpl implements SearchProductService {
     @Qualifier("searchUrlNgf")
     private SearchUrl searchUrlNgf;
 
-    public List<ItemDto> search(ProductDto product, long date) throws Exception {
+    public List<ItemDto> search(ProductDto product, long date, SimilarityAlgorithm algorithm) throws Exception {
         List<ItemDto> result = new ArrayList<>();
         WebDriver driver = null;
         try {
@@ -69,12 +80,13 @@ public class SearchProductServiceImpl implements SearchProductService {
             driver = new ChromeDriver(options);
 
             try {
-                List<WebElement> makroElements = null;
-                makroElements = getData(driver, urlMakro, searchProperties.getMakroSelector());
-                result.addAll(parseMakro.getItems(makroElements, product, urlMakro, date));
+                List<WebElement> makroElements = getData(driver, urlMakro, searchProperties.getMakroSelector());
+                List<ItemDto> parsedResults = parseMakro.getItems(makroElements, product, urlMakro, date);
+                List<ItemDto> ratedResults = getRatedResults(parsedResults, algorithm);
+                result.addAll(ratedResults);
             } catch (Exception ex) {
                 String message = "Document retrieval failure for makro: " + ex.getMessage();
-                log.error(message);
+                log.error(message, ex);
                 ItemDto item = ItemDto.builder()
                         .date(date)
                         .initialText(product.getInitialText())
@@ -90,9 +102,11 @@ public class SearchProductServiceImpl implements SearchProductService {
             }
 
             try {
-                List<WebElement> checkersElements = null;
-                checkersElements = getData(driver, urlCheckers, searchProperties.getCheckersSelector());
-                result.addAll(parseCheckers.getItems(checkersElements, product, urlCheckers, date));
+                List<WebElement> checkersElements = getData(driver, urlCheckers,
+                        searchProperties.getCheckersSelector());
+                List<ItemDto> parsedResults = parseCheckers.getItems(checkersElements, product, urlCheckers, date);
+                List<ItemDto> ratedResults = getRatedResults(parsedResults, algorithm);
+                result.addAll(ratedResults);
             } catch (Exception ex) {
                 String message = "Document retrieval failure for checkers: " + ex.getMessage();
                 log.error(message);
@@ -111,9 +125,10 @@ public class SearchProductServiceImpl implements SearchProductService {
             }
 
             try {
-                List<WebElement> ngfElements = null;
-                ngfElements = getData(driver, urlNgf, searchProperties.getNgfSelector());
-                result.addAll(parseNgf.getItems(ngfElements, product, urlNgf, date));
+                List<WebElement> ngfElements = getData(driver, urlNgf, searchProperties.getNgfSelector());
+                List<ItemDto> parsedResults = parseNgf.getItems(ngfElements, product, urlNgf, date);
+                List<ItemDto> ratedResults = getRatedResults(parsedResults, algorithm);
+                result.addAll(ratedResults);
             } catch (Exception ex) {
                 String message = "Document retrieval failure for ngf: " + ex.getMessage();
                 log.error(message);
@@ -179,6 +194,22 @@ public class SearchProductServiceImpl implements SearchProductService {
 
         return elements;
 
+    }
+
+    private List<ItemDto> getRatedResults(List<ItemDto> items, SimilarityAlgorithm algorithm) {
+
+        if (algorithm == SimilarityAlgorithm.ALL || items.size() == 0) {
+            return items;
+        }
+
+        ItemDto topResult = switch (algorithm) {
+            case DEFAULT -> items.size() > 0 ? items.get(0) : null;
+            case LEVENSHTEIN -> levenshteinSimilarity.findTopResult(items);
+            case JARO_WINKLER -> jaroWinklerSimilarity.findTopResult(items);
+            default -> throw new RuntimeException("Unknown algorithm value");
+        };
+
+        return Arrays.asList(topResult);
     }
 
     private String generateUrl(Source site, String search) throws Exception {
